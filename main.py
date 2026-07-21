@@ -87,7 +87,7 @@ def main(page: ft.Page):
 
                         # Eğer hücrede geçerli bir http linki varsa resmi solda göster
                         if gorsel_url.startswith("http"):
-                            gorsel_kutusu = ft.Image(src=gorsel_url, width=90, height=90, fit=ft.ImageFit.CONTAIN)
+                            gorsel_kutusu = ft.Image(src=gorsel_url, width=90, height=90, fit="contain")
                             # Resmi ve yazıları yan yana diz (Row)
                             kart_icerigi = ft.Row([gorsel_kutusu, icerik_sutunu], alignment="start", vertical_alignment="center")
                         else:
