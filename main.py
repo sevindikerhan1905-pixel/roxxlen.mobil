@@ -71,24 +71,38 @@ def main(page: ft.Page):
                     sonuc_alani.controls.append(ft.Text("Bu koda/isme ait ürün bulunamadı.", color="red"))
                 else:
                     for index, row in bulunanlar.iterrows():
-                        
                         urun_adi = row.get("ÜRÜN ADI", "-")
                         urun_kodu = row.get("ÜRÜN KODU", "-")
                         raf_konumu = row.get("RAF NO", "Belirtilmemiş")
+                        
+                        # E-Tablo'daki "GÖRSEL LİNKİ" sütunundan veriyi çekiyoruz
+                        gorsel_url = str(row.get("GÖRSEL LİNKİ", "")).strip()
+
+                        # Sağ tarafta alt alta duracak metin bilgileri
+                        icerik_sutunu = ft.Column([
+                            ft.Text(f"{urun_adi}", weight="bold", size=16, color="black87"),
+                            ft.Text(f"Kod: {urun_kodu}", size=14, color="grey700"),
+                            ft.Text(f"Konum: {raf_konumu}", size=16, weight="bold", color="blue700"),
+                        ], expand=True)
+
+                        # Eğer hücrede geçerli bir http linki varsa resmi solda göster
+                        if gorsel_url.startswith("http"):
+                            gorsel_kutusu = ft.Image(src=gorsel_url, width=90, height=90, fit=ft.ImageFit.CONTAIN)
+                            # Resmi ve yazıları yan yana diz (Row)
+                            kart_icerigi = ft.Row([gorsel_kutusu, icerik_sutunu], alignment="start", vertical_alignment="center")
+                        else:
+                            # Link yoksa uygulamayı çökertme, sadece yazıları göster
+                            kart_icerigi = ft.Row([icerik_sutunu], alignment="start")
 
                         kart = ft.Card(
                             content=ft.Container(
-                                content=ft.Column([
-                                    ft.Text(f"{urun_adi}", weight="bold", size=18, color="black87"),
-                                    ft.Text(f"Kod: {urun_kodu}", size=14, color="grey700"),
-                                    ft.Text(f"Konum: {raf_konumu}", size=16, weight="bold", color="blue700"),
-                                ]),
+                                content=kart_icerigi,
                                 padding=15,
                                 bgcolor="white",
                                 border_radius=10,
                             ),
                             elevation=3,
-                            margin=10  # Hata veren margin kodu düzeltildi
+                            margin=10 
                         )
                         sonuc_alani.controls.append(kart)
 
