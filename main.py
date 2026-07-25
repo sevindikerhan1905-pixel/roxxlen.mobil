@@ -172,7 +172,6 @@ def main(page: ft.Page):
                 page.update()
 
         except ImportError:
-            # OpenCV yüklü değilse uyarı ver
             sonuc_alani.controls.clear()
             sonuc_alani.controls.append(ft.Text("❌ 'opencv-python' modülü eksik! Lütfen 'pip install opencv-python' çalıştırın.", color="red", size=14))
             page.update()
@@ -181,12 +180,16 @@ def main(page: ft.Page):
             sonuc_alani.controls.append(ft.Text(f"❌ Kamera hatası: {ex}", color="red"))
             page.update()
 
-    # --- 5. AŞAMA: KONTROLLER VE ARAYÜZ ---
+    # --- 5. AŞAMA: KONTROLLER VE ARAYÜZ (HATA DÜZELTİLDİ) ---
     search_input = ft.TextField(
         label="Ürün adı, barkod veya ana kod girin",
         prefix_icon="search", 
-        suffix_icon="qr_code_scanner",
-        on_suffix_tap=kamera_ile_okut,  # Sağdaki tarayıcı simgesine tıklayınca kamerayı açar
+        suffix=ft.IconButton(
+            icon="qr_code_scanner",
+            icon_color="blue",
+            tooltip="Kamera ile Barkod Okut",
+            on_click=kamera_ile_okut
+        ),
         border_radius=15,
         expand=True,
         text_size=16,
