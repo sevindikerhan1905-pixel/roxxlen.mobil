@@ -3,4 +3,5 @@ pandas
 openpyxl
 certifi
 requests
-opencv-python
+opencv-python-headless
+pyzbar
