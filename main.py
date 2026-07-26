@@ -6,7 +6,6 @@ import time
 GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1m9pIg0waSup8ZT_iKIttms_WbDY7DSXT6edabDgezxw/export?format=xlsx"
 
 # --- HIZLANDIRMA ADIMI ---
-# Uygulama açılırken veriyi BİR KERE internetten çekip hafızaya alıyoruz.
 try:
     df_tum_liste = pd.read_excel(GOOGLE_SHEET_URL, sheet_name="TÜM LİSTE")
     df_tum_liste = df_tum_liste.fillna("").astype(str)
@@ -16,13 +15,12 @@ except Exception as e:
 
 
 def main(page: ft.Page):
-    # Uygulama penceresi ayarları
     page.title = "Roxxlen Depo"
     page.window_width = 400
     page.window_height = 800
     page.theme_mode = "light"
     
-    # 1. AŞAMA: SPLASH (AÇILIŞ) EKRANI
+    # 1. AŞAMA: SPLASH EKRANI
     page.horizontal_alignment = "center"
     page.vertical_alignment = "center"
 
@@ -32,7 +30,7 @@ def main(page: ft.Page):
 
     time.sleep(2)
 
-    # 2. AŞAMA: ÜRÜN BULMA EKRANINA GEÇİŞ
+    # 2. AŞAMA: ÜRÜN BULMA EKRANI
     page.clean() 
     page.vertical_alignment = "start" 
 
@@ -49,7 +47,6 @@ def main(page: ft.Page):
     # --- 3. AŞAMA: ARAMA MOTORU ---
     def arama_yap(e):
         aranan = search_input.value.strip().lower()
-        
         sonuc_alani.controls.clear()
 
         if not aranan:
@@ -61,7 +58,6 @@ def main(page: ft.Page):
             if df_tum_liste.empty:
                 sonuc_alani.controls.append(ft.Text("Tablo yüklenemedi. İnternet bağlantınızı kontrol edip uygulamayı yeniden başlatın.", color="red"))
             else:
-                # Girilen barkod veya kelimeyi tablonun tüm satırlarında ara
                 mask = df_tum_liste.apply(lambda x: x.str.lower().str.contains(aranan)).any(axis=1)
                 bulunanlar = df_tum_liste[mask]
 
@@ -74,7 +70,6 @@ def main(page: ft.Page):
                         raf_konumu = row.get("RAF NO", "Belirtilmemiş")
                         gorsel_url = str(row.get("GÖRSEL LİNKİ", "")).strip()
 
-                        # REYON / RAF KONUMUNU BÜYÜK VE DİKKAT ÇEKİCİ GÖSTERİYORUZ
                         icerik_sutunu = ft.Column([
                             ft.Text(f"{urun_adi}", weight="bold", size=17, color="black87"),
                             ft.Text(f"Kod: {urun_kodu}", size=14, color="grey700"),
@@ -110,40 +105,46 @@ def main(page: ft.Page):
         
         page.update()
 
-    # --- 4. AŞAMA: KAMERA İLE BARKOD / QR KOD OKUMA FONKSİYONU ---
+    # --- 4. AŞAMA: KAMERA İLE BARKOD OKUMA (GÜÇLENDİRİLMİŞ) ---
     def kamera_ile_okut(e):
         try:
             import cv2
             
-            # Kamerayı başlat
-            cap = cv2.VideoCapture(0)
-            if not cap.isOpened():
+            # Telefonlardaki Arka ve Ön Kamera İndekslerini Sırayla Tara
+            cap = None
+            for cam_index in [0, 1, 2, -1]:
+                try:
+                    temp_cap = cv2.VideoCapture(cam_index)
+                    if temp_cap.isOpened():
+                        cap = temp_cap
+                        break
+                except:
+                    continue
+
+            if cap is None or not cap.isOpened():
                 sonuc_alani.controls.clear()
-                sonuc_alani.controls.append(ft.Text("❌ Kamera açılamadı! Kamera izinlerini kontrol edin.", color="red", size=15))
+                sonuc_alani.controls.append(ft.Text("❌ Kamera açılamadı! Lütfen telefonunuzun Ayarlar -> Uygulamalar kısmından kamera iznini onaylayın.", color="red", size=14))
                 page.update()
                 return
 
             sonuc_alani.controls.clear()
-            sonuc_alani.controls.append(ft.Text("📷 Kamera aktif! Barkodu kameraya tutun... (İptal için 'q' tuşuna basın)", color="blue", size=15, weight="bold"))
+            sonuc_alani.controls.append(ft.Text("📷 Kamera aktif! Barkodu okutun...", color="blue", size=15, weight="bold"))
             page.update()
 
             qr_detector = cv2.QRCodeDetector()
             scanned_code = None
             start_time = time.time()
 
-            # Kamera görüntüsünü tara
-            while time.time() - start_time < 30: # 30 saniye zaman aşımı
+            while time.time() - start_time < 25:
                 ret, frame = cap.read()
                 if not ret:
                     break
 
-                # 1. QR Kod Taraması
                 val, pts, _ = qr_detector.detectAndDecode(frame)
                 if val:
                     scanned_code = val
                     break
 
-                # 2. Standart Barkod Taraması (OpenCV BarcodeDetector)
                 if hasattr(cv2, 'barcode'):
                     try:
                         barcode_detector = cv2.barcode.BarcodeDetector()
@@ -154,7 +155,6 @@ def main(page: ft.Page):
                     except:
                         pass
 
-                # Kamera görüntüsünü ekranda canlı göster
                 cv2.imshow("Roxxlen Depo - Barkod Okuyucu", frame)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
@@ -162,30 +162,25 @@ def main(page: ft.Page):
             cap.release()
             cv2.destroyAllWindows()
 
-            # Eğer barkod okunduysa arama kutusuna doldur ve aramayı çalıştır
             if scanned_code:
                 search_input.value = str(scanned_code).strip()
                 arama_yap(None)
             else:
                 sonuc_alani.controls.clear()
-                sonuc_alani.controls.append(ft.Text("⚠️ Barkod okunamadı veya işlem iptal edildi.", color="orange", size=15))
+                sonuc_alani.controls.append(ft.Text("⚠️ Barkod okunamadı veya tarama iptal edildi.", color="orange", size=14))
                 page.update()
 
-        except ImportError:
-            sonuc_alani.controls.clear()
-            sonuc_alani.controls.append(ft.Text("❌ 'opencv-python' modülü eksik! Lütfen 'pip install opencv-python' çalıştırın.", color="red", size=14))
-            page.update()
         except Exception as ex:
             sonuc_alani.controls.clear()
-            sonuc_alani.controls.append(ft.Text(f"❌ Kamera hatası: {ex}", color="red"))
+            sonuc_alani.controls.append(ft.Text(f"❌ Kamera Hatası: {ex}", color="red"))
             page.update()
 
-    # --- 5. AŞAMA: KONTROLLER VE ARAYÜZ (HATA DÜZELTİLDİ) ---
+    # --- 5. AŞAMA: KONTROLLER (İKON HATASI DÜZELTİLDİ) ---
     search_input = ft.TextField(
         label="Ürün adı, barkod veya ana kod girin",
-        prefix_icon="search", 
+        prefix_icon=ft.icons.SEARCH,
         suffix=ft.IconButton(
-            icon="qr_code_scanner",
+            icon=ft.icons.CAMERA_ALT,
             icon_color="blue",
             tooltip="Kamera ile Barkod Okut",
             on_click=kamera_ile_okut
@@ -196,8 +191,8 @@ def main(page: ft.Page):
         on_submit=arama_yap
     )
     
-    search_button = ft.ElevatedButton("Ara", on_click=arama_yap, icon="search")
-    camera_button = ft.ElevatedButton("📷 Barkod Tara", on_click=kamera_ile_okut, icon="qr_code_scanner", bgcolor="blue", color="white")
+    search_button = ft.ElevatedButton("Ara", on_click=arama_yap, icon=ft.icons.SEARCH)
+    camera_button = ft.ElevatedButton("📷 Barkod Tara", on_click=kamera_ile_okut, icon=ft.icons.CAMERA_ALT, bgcolor="blue", color="white")
 
     page.add(
         ft.Container(height=20), 
