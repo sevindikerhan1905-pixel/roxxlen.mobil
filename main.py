@@ -105,12 +105,11 @@ def main(page: ft.Page):
         
         page.update()
 
-    # --- 4. AŞAMA: KAMERA İLE BARKOD OKUMA (GÜÇLENDİRİLMİŞ) ---
+    # --- 4. AŞAMA: KAMERA İLE BARKOD OKUMA ---
     def kamera_ile_okut(e):
         try:
             import cv2
             
-            # Telefonlardaki Arka ve Ön Kamera İndekslerini Sırayla Tara
             cap = None
             for cam_index in [0, 1, 2, -1]:
                 try:
@@ -123,7 +122,7 @@ def main(page: ft.Page):
 
             if cap is None or not cap.isOpened():
                 sonuc_alani.controls.clear()
-                sonuc_alani.controls.append(ft.Text("❌ Kamera açılamadı! Lütfen telefonunuzun Ayarlar -> Uygulamalar kısmından kamera iznini onaylayın.", color="red", size=14))
+                sonuc_alani.controls.append(ft.Text("❌ Kamera açılamadı! Lütfen Ayarlar -> Uygulamalar kısmından kamera iznini onaylayın.", color="red", size=14))
                 page.update()
                 return
 
@@ -175,12 +174,12 @@ def main(page: ft.Page):
             sonuc_alani.controls.append(ft.Text(f"❌ Kamera Hatası: {ex}", color="red"))
             page.update()
 
-    # --- 5. AŞAMA: KONTROLLER (İKON HATASI DÜZELTİLDİ) ---
+    # --- 5. AŞAMA: KONTROLLER (STRING İKONLAR İLE HATA ÇÖZÜLDÜ) ---
     search_input = ft.TextField(
         label="Ürün adı, barkod veya ana kod girin",
-        prefix_icon=ft.icons.SEARCH,
+        prefix_icon="search",
         suffix=ft.IconButton(
-            icon=ft.icons.CAMERA_ALT,
+            icon="camera_alt",
             icon_color="blue",
             tooltip="Kamera ile Barkod Okut",
             on_click=kamera_ile_okut
@@ -191,8 +190,8 @@ def main(page: ft.Page):
         on_submit=arama_yap
     )
     
-    search_button = ft.ElevatedButton("Ara", on_click=arama_yap, icon=ft.icons.SEARCH)
-    camera_button = ft.ElevatedButton("📷 Barkod Tara", on_click=kamera_ile_okut, icon=ft.icons.CAMERA_ALT, bgcolor="blue", color="white")
+    search_button = ft.ElevatedButton("Ara", on_click=arama_yap, icon="search")
+    camera_button = ft.ElevatedButton("📷 Barkod Tara", on_click=kamera_ile_okut, icon="camera_alt", bgcolor="blue", color="white")
 
     page.add(
         ft.Container(height=20), 
